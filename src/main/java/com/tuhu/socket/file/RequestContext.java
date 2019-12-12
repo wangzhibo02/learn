@@ -18,7 +18,7 @@ public class RequestContext implements Serializable {
     /**
      * 是否分块
      */
-    private Integer isBlock;
+    private Boolean isBlock;
 
     /**
      * 文件唯一码
@@ -40,11 +40,11 @@ public class RequestContext implements Serializable {
      */
     private List<BlockContext> blockContextList;
 
-    public Integer getIsBlock() {
+    public Boolean getIsBlock() {
         return isBlock;
     }
 
-    public void setIsBlock(Integer isBlock) {
+    public void setIsBlock(Boolean isBlock) {
         this.isBlock = isBlock;
     }
 

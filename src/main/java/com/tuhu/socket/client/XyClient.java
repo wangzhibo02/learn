@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.alibaba.fastjson.JSON;
 import com.tuhu.socket.file.BlockContext;
 import com.tuhu.socket.file.RequestContext;
 
@@ -52,12 +53,16 @@ public class XyClient {
     private static String getFileContent(File file, long startIndex) {
         try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
             raf.seek(startIndex);
-            // raf.setLength(BLOCK_SIZE);
+            long size = BLOCK_SIZE;
             byte[] bytes = new byte[1024 * 1024];
             int len = 0;
             StringBuilder content = new StringBuilder();
-            while ((len = raf.read(bytes)) > 0) {
-                content.append(new String(bytes, 0, len));
+            while (size > 0) {
+                if ((len = raf.read(bytes)) <= 0) {
+                    break;
+                }
+                content.append(new String(bytes, 0, len, "UTF-8"));
+                size = size - len;
             }
             return content.toString();
         } catch (Exception e) {
@@ -80,7 +85,7 @@ public class XyClient {
     }
 
     private static void sendFile(File file, RequestContext requestContext) {
-        requestContext.setIsBlock(0);
+        requestContext.setIsBlock(Boolean.FALSE);
         BlockContext blockContext = new BlockContext();
         blockContext.setNum(1);
         blockContext.setIndex(0L);
@@ -90,14 +95,14 @@ public class XyClient {
         SocketContext context = new SocketContext();
         context.setHost("127.0.0.1");
         context.setPort(8888);
-        context.setRequestContext(requestContext);
+        context.setContent(JSON.toJSONString(requestContext));
         long startTime = System.currentTimeMillis();
         String result = ClientSocket.send(context);
         System.out.println("传输用时[" + (System.currentTimeMillis() - startTime) + "]毫秒\n" + result);
     }
 
     private static void sendBlockFile(File file, RequestContext requestContext) {
-        requestContext.setIsBlock(1);
+        requestContext.setIsBlock(Boolean.TRUE);
         long count = requestContext.getLength() / BLOCK_SIZE;
         if (requestContext.getLength() % BLOCK_SIZE > 0) {
             count++;
@@ -114,15 +119,16 @@ public class XyClient {
         SocketContext context = new SocketContext();
         context.setHost("127.0.0.1");
         context.setPort(8888);
-        context.setRequestContext(requestContext);
+        context.setContent(JSON.toJSONString(requestContext));
         long startTime = System.currentTimeMillis();
-        String result = ClientSocket.send(context);
-        System.out.println("分块信息：" + result);
+        // String result = ClientSocket.send(context);
+        // System.out.println("分块响应信息：" + result);
 
         ExecutorService executorService = Executors.newFixedThreadPool(blockContextList.size());
         for (BlockContext blockContext : blockContextList) {
             String content = getFileContent(file, blockContext.getIndex());
             blockContext.setContent(content);
+            requestContext.setBlockContextList(Arrays.asList(blockContext));
             executorService.execute(new ClientThread(requestContext));
         }
         executorService.isTerminated();

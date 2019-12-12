@@ -1,5 +1,6 @@
 package com.tuhu.socket.client;
 
+import com.alibaba.fastjson.JSON;
 import com.tuhu.socket.file.RequestContext;
 
 /**
@@ -20,7 +21,7 @@ public class ClientThread implements Runnable {
         SocketContext context = new SocketContext();
         context.setHost("127.0.0.1");
         context.setPort(8888);
-        context.setRequestContext(requestContext);
+        context.setContent(JSON.toJSONString(requestContext));
         ClientSocket.send(context);
     }
 

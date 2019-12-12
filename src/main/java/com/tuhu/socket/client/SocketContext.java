@@ -2,8 +2,6 @@ package com.tuhu.socket.client;
 
 import java.io.Serializable;
 
-import com.tuhu.socket.file.RequestContext;
-
 /**
  * 
  * @author xiongyan
@@ -29,7 +27,7 @@ public class SocketContext implements Serializable {
     /**
      * 文件内容
      */
-    private RequestContext requestContext;
+    private String content;
 
     public String getHost() {
         return host;
@@ -47,12 +45,12 @@ public class SocketContext implements Serializable {
         this.port = port;
     }
 
-    public RequestContext getRequestContext() {
-        return requestContext;
+    public String getContent() {
+        return content;
     }
 
-    public void setRequestContext(RequestContext requestContext) {
-        this.requestContext = requestContext;
+    public void setContent(String content) {
+        this.content = content;
     }
 
 }
