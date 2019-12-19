@@ -24,8 +24,8 @@ import com.tuhu.socket.file.RequestContext;
  */
 public class XyClient {
 
-    // 块大小10M
-    public static final long BLOCK_SIZE = 1024 * 1024 * 10;
+    // 块大小100M
+    public static final long BLOCK_SIZE = 1024 * 1024 * 100;
 
     public static void main(String[] args) {
         // 文件saas-wms-out-jv_logs.log
@@ -90,7 +90,7 @@ public class XyClient {
         blockContext.setNum(1);
         blockContext.setIndex(0L);
         blockContext.setSize(requestContext.getLength());
-        blockContext.setContent(getFileContent(file, 0));
+        blockContext.setContent(getFileContent(file, blockContext.getIndex()));
         requestContext.setBlockContextList(Arrays.asList(blockContext));
         SocketContext context = new SocketContext();
         context.setHost("127.0.0.1");
@@ -124,7 +124,7 @@ public class XyClient {
         // String result = ClientSocket.send(context);
         // System.out.println("分块响应信息：" + result);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(blockContextList.size());
+        ExecutorService executorService = Executors.newFixedThreadPool(blockContextList.size() > 10 ? 10 : blockContextList.size());
         for (BlockContext blockContext : blockContextList) {
             String content = getFileContent(file, blockContext.getIndex());
             blockContext.setContent(content);
