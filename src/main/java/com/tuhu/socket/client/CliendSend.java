@@ -48,7 +48,7 @@ public class CliendSend {
         long startTime = System.currentTimeMillis();
         SocketResponse response = ClientHandler.doHandle(request);
         if (null != response && response.getCode() == ResponseCodeEnum.SUCCESS.getCode()) {
-            log.info("文件传输成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
+            log.info("文件传输成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
         } else {
             log.error("文件传输失败：{}", response.getMsg());
         }
@@ -65,13 +65,13 @@ public class CliendSend {
         // 校验文件
         List<BlockDto> blockList = checkFile(fileDto);
         if (null == blockList) {
-            log.info("文件校验成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
+            log.info("文件校验成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
         } else {
             // 分块发送
             sendBlock(fileDto, blockList);
             // 合并文件
             mergeFile(fileDto);
-            log.info("分块传输成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
+            log.info("分块传输成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
         }
     }
 
