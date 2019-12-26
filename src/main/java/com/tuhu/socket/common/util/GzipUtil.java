@@ -5,15 +5,12 @@ import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * Gzip解压缩
  * 
  * @author xiongyan
  * @date 2019/12/23
  */
-@Slf4j
 public class GzipUtil {
 
     /**
@@ -28,7 +25,7 @@ public class GzipUtil {
             gzip.finish();
             return out.toByteArray();
         } catch (Exception e) {
-            log.error("压缩GZip失败", e);
+            System.out.println("压缩GZip失败：" + e.getMessage());
             return null;
         }
     }
@@ -49,7 +46,7 @@ public class GzipUtil {
             out.flush();
             return out.toByteArray();
         } catch (Exception e) {
-            log.error("压缩GZip失败", e);
+            System.out.println("压缩GZip失败：" + e.getMessage());
             return null;
         }
     }

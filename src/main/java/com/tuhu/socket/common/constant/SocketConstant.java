@@ -16,7 +16,7 @@ public class SocketConstant {
     /**
      * 保存路径
      */
-    public static final String BASE_PATH = "d:";
+    public static final String BASE_PATH = "/root/prod/xiongyan/data";
 
     /**
      * 空格

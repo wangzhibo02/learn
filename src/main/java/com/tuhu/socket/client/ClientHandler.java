@@ -9,6 +9,7 @@ import java.util.List;
 import com.tuhu.socket.common.enums.ResponseCodeEnum;
 import com.tuhu.socket.common.enums.TypeEnum;
 import com.tuhu.socket.common.util.FileUtil;
+import com.tuhu.socket.common.util.GzipUtil;
 import com.tuhu.socket.common.util.ResponseUtil;
 import com.tuhu.socket.common.util.SerializationUtil;
 import com.tuhu.socket.dto.BlockDto;
@@ -16,21 +17,18 @@ import com.tuhu.socket.dto.FileDto;
 import com.tuhu.socket.dto.SocketRequest;
 import com.tuhu.socket.dto.SocketResponse;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * 客户端处理
  * 
  * @author xiongyan
  * @date 2019/12/09
  */
-@Slf4j
 public class ClientHandler {
 
     /**
      * 处理
      * 
-     * @param context
+     * @param request
      * @return
      */
     public static SocketResponse doHandle(SocketRequest request) {
@@ -41,12 +39,19 @@ public class ClientHandler {
             // 文件信息
             out.writeBytes(SerializationUtil.toStr(fileDto));
             if (fileDto.getType() != TypeEnum.MERGE.getType()) {
-                // 块信息
-                out.writeBytes(SerializationUtil.toStr(fileDto.getBlockList()));
+                List<BlockDto> blockList = fileDto.getBlockList();
+                byte[] data = null;
                 if (fileDto.getType() == TypeEnum.SEND.getType()) {
+                    // 读取块信息
+                    BlockDto blockDto = blockList.get(0);
+                    data = FileUtil.getFileData(fileDto.getFile(), blockDto.getIndex(), blockDto.getSize());
+                    data = GzipUtil.gZip(data);
+                    blockDto.setSize((long) data.length);
+                }
+                // 块信息
+                out.writeBytes(SerializationUtil.toStr(blockList));
+                if (null != data) {
                     // 块内容
-                    BlockDto blockDto = fileDto.getBlockList().get(0);
-                    byte[] data = FileUtil.getFileData(fileDto.getFile(), blockDto.getIndex(), blockDto.getSize());
                     out.write(data);
                 }
             }
@@ -65,16 +70,16 @@ public class ClientHandler {
                 // 块信息
                 String blockStr = reader.readLine();
                 if (null == blockStr) {
-                    log.info("{} 文件传输完成", fileDto.getFileName());
+                    System.out.println(fileDto.getFileName() + " 文件传输完成");
                 } else {
                     List<BlockDto> blockList = SerializationUtil.toBlockDto(blockStr);
                     fileDto.setBlockList(blockList);
                     if (fileDto.getType() == TypeEnum.CHECK.getType()) {
-                        log.info("需要续传块信息：{}", blockList);
+                        System.out.println("需要续传块信息：" + blockList.size());
                     } else if (fileDto.getType() == TypeEnum.MERGE.getType()) {
-                        log.info("{}-文件合并完成 ", fileDto.getFileName());
+                        System.out.println(fileDto.getFileName() + "-文件合并完成 ");
                     } else {
-                        log.info("{}-{}块传输完成 ", fileDto.getFileName(), blockList.get(0).getNum());
+                        System.out.println(fileDto.getFileName() + "-" + blockList.get(0).getNum() + "块传输完成 ");
                     }
                 }
             }
@@ -84,7 +89,7 @@ public class ClientHandler {
             out.close();
             return response;
         } catch (Exception e) {
-            log.error("客户端处理失败", e);
+            System.out.println("客户端处理失败：" + e.getMessage());
             return ResponseUtil.error("客户端处理失败");
         }
     }

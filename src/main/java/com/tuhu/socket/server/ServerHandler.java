@@ -10,11 +10,10 @@ import com.tuhu.socket.common.constant.SocketConstant;
 import com.tuhu.socket.common.enums.ResponseCodeEnum;
 import com.tuhu.socket.common.enums.TypeEnum;
 import com.tuhu.socket.common.util.FileUtil;
+import com.tuhu.socket.common.util.GzipUtil;
 import com.tuhu.socket.common.util.SerializationUtil;
 import com.tuhu.socket.dto.BlockDto;
 import com.tuhu.socket.dto.FileDto;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 服务端处理
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
  * @author xiongyan
  * @date 2019/12/06
  */
-@Slf4j
 public class ServerHandler {
 
     /**
@@ -49,6 +47,7 @@ public class ServerHandler {
                     long size = blockList.get(0).getSize();
                     byte[] data = new byte[(int) size];
                     in.readFully(data);
+                    data = GzipUtil.unGZip(data);
                     // 写入文件
                     FileUtil.writerFile(fileDto, data);
                 }
@@ -64,7 +63,7 @@ public class ServerHandler {
             }
             out.flush();
         } catch (Exception e) {
-            log.error("服务端处理失败", e);
+            System.out.println("服务端处理失败：" + e.getMessage());
             if (null == out) {
                 try {
                     out = new DataOutputStream(socket.getOutputStream());

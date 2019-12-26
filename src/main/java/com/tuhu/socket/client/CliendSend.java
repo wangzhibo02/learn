@@ -15,24 +15,22 @@ import com.tuhu.socket.dto.FileDto;
 import com.tuhu.socket.dto.SocketRequest;
 import com.tuhu.socket.dto.SocketResponse;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * 客户端发送
  * 
  * @author xiongyan
  * @date 2019/12/23
  */
-@Slf4j
 public class CliendSend {
 
     /**
      * 完整发送
      * 
-     * @param fileDto
+     * @param request
      * @throws Exception
      */
-    public static void sendFile(FileDto fileDto) throws Exception {
+    public static void sendFile(SocketRequest request) throws Exception {
+        FileDto fileDto = request.getFileDto();
         fileDto.setBlockTotal(1);
         fileDto.setType(TypeEnum.SEND.getType());
         BlockDto blockDto = new BlockDto();
@@ -41,47 +39,45 @@ public class CliendSend {
         blockDto.setSize(fileDto.getFileLength());
         fileDto.setBlockList(Arrays.asList(blockDto));
 
-        SocketRequest request = new SocketRequest();
-        request.setHost("127.0.0.1");
-        request.setPort(8888);
-        request.setFileDto(fileDto);
         long startTime = System.currentTimeMillis();
         SocketResponse response = ClientHandler.doHandle(request);
         if (null != response && response.getCode() == ResponseCodeEnum.SUCCESS.getCode()) {
-            log.info("文件传输成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
+            System.out.println("文件传输成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
         } else {
-            log.error("文件传输失败：{}", response.getMsg());
+            System.out.println("文件传输失败：" + response.getMsg());
         }
     }
 
     /**
      * 分块传输
      * 
-     * @param fileDto
+     * @param request
      * @throws Exception
      */
-    public static void sendBlockFile(FileDto fileDto) throws Exception {
+    public static void sendBlockFile(SocketRequest request) throws Exception {
         long startTime = System.currentTimeMillis();
         // 校验文件
-        List<BlockDto> blockList = checkFile(fileDto);
+        List<BlockDto> blockList = checkFile(request);
         if (null == blockList) {
-            log.info("文件校验成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
+            System.out.println("文件校验成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
         } else {
             // 分块发送
-            sendBlock(fileDto, blockList);
+            sendBlock(request, blockList);
+            System.out.println("分块传输成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
             // 合并文件
-            mergeFile(fileDto);
-            log.info("分块传输成功，用时[{}]毫秒", (System.currentTimeMillis() - startTime));
+            mergeFile(request);
+            // System.out.println("文件合并成功，用时[" + (System.currentTimeMillis() - startTime) + "]毫秒");
         }
     }
 
     /**
      * 校验文件块信息，主要用于续传
      * 
-     * @param fileDto
+     * @param request
      * @return
      */
-    private static List<BlockDto> checkFile(FileDto fileDto) {
+    private static List<BlockDto> checkFile(SocketRequest request) {
+        FileDto fileDto = request.getFileDto();
         int count = (int) (fileDto.getFileLength() / SocketConstant.BLOCK_SIZE);
         if (fileDto.getFileLength() % SocketConstant.BLOCK_SIZE > 0) {
             count++;
@@ -102,13 +98,9 @@ public class CliendSend {
         }
         fileDto.setBlockList(blockList);
 
-        SocketRequest request = new SocketRequest();
-        request.setHost("127.0.0.1");
-        request.setPort(8888);
-        request.setFileDto(fileDto);
         SocketResponse response = ClientHandler.doHandle(request);
         if (null == response || response.getCode() == ResponseCodeEnum.ERROR.getCode()) {
-            log.error("文件校验失败：{}", response.getMsg());
+            System.out.println("文件校验失败：" + response.getMsg());
             return null;
         }
         return response.getFileDto().getBlockList();
@@ -117,11 +109,13 @@ public class CliendSend {
     /**
      * 块信息传输
      * 
-     * @param sourceFileDto
+     * @param request
      * @param blockList
      * @throws Exception
      */
-    private static void sendBlock(FileDto sourceFileDto, List<BlockDto> blockList) throws Exception {
+    private static void sendBlock(SocketRequest request, List<BlockDto> blockList) throws Exception {
+        FileDto sourceFileDto = request.getFileDto();
+
         ExecutorService executorService = Executors.newFixedThreadPool(blockList.size() > 20 ? 20 : blockList.size());
         for (BlockDto blockDto : blockList) {
             FileDto fileDto = new FileDto();
@@ -133,11 +127,11 @@ public class CliendSend {
             fileDto.setType(TypeEnum.SEND.getType());
             fileDto.setBlockList(Arrays.asList(blockDto));
 
-            SocketRequest request = new SocketRequest();
-            request.setHost("127.0.0.1");
-            request.setPort(8888);
-            request.setFileDto(fileDto);
-            executorService.execute(() -> ClientHandler.doHandle(request));
+            SocketRequest socketRequest = new SocketRequest();
+            socketRequest.setHost(request.getHost());
+            socketRequest.setPort(request.getPort());
+            socketRequest.setFileDto(fileDto);
+            executorService.execute(() -> ClientHandler.doHandle(socketRequest));
         }
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.HOURS);
@@ -146,14 +140,11 @@ public class CliendSend {
     /**
      * 文件合并
      * 
-     * @param fileDto
+     * @param request
      */
-    private static void mergeFile(FileDto fileDto) {
+    private static void mergeFile(SocketRequest request) {
+        FileDto fileDto = request.getFileDto();
         fileDto.setType(TypeEnum.MERGE.getType());
-        SocketRequest request = new SocketRequest();
-        request.setHost("127.0.0.1");
-        request.setPort(8888);
-        request.setFileDto(fileDto);
-        ClientHandler.doHandle(request);
+        new Thread(() -> ClientHandler.doHandle(request)).start();
     }
 }

@@ -18,14 +18,11 @@ import com.tuhu.socket.common.constant.SocketConstant;
 import com.tuhu.socket.dto.BlockDto;
 import com.tuhu.socket.dto.FileDto;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * 
  * @author xiongyan
  * @date 2019/12/23
  */
-@Slf4j
 public class FileUtil {
 
     /**
@@ -44,7 +41,7 @@ public class FileUtil {
             mbf.clear();
             return bytes;
         } catch (Exception e) {
-            log.error("获取文件块信息失败，文件名：{}，开始索引：{}，块大小：{}", file.getName(), index, size, e);
+            System.out.println("获取文件块信息失败，文件名：" + file.getName() + "，开始索引：" + index + "，块大小：" + size);
             return null;
         }
     }
@@ -67,7 +64,7 @@ public class FileUtil {
             BigInteger bi = new BigInteger(1, md5.digest());
             return bi.toString(16);
         } catch (Exception e) {
-            log.error("获取文件唯一码失败，文件名：{}", file.getName(), e);
+            System.out.println("获取文件唯一码失败，文件名：" + file.getName());
             return null;
         }
     }
@@ -92,7 +89,7 @@ public class FileUtil {
             fos.write(data);
             fos.flush();
         } catch (Exception e) {
-            log.error("写入文件失败", e);
+            System.out.println("写入文件失败：" + e.getMessage());
         }
     }
 
@@ -106,7 +103,7 @@ public class FileUtil {
         String dirPath = SocketConstant.BASE_PATH + File.separator + fileCode;
         File dirFile = new File(dirPath);
         if (!dirFile.exists()) {
-            dirFile.mkdir();
+            dirFile.mkdirs();
         }
         return dirPath;
     }
@@ -156,16 +153,12 @@ public class FileUtil {
      */
     public static void checkFile(FileDto fileDto) {
         // 文件目录
-        String dirPath = SocketConstant.BASE_PATH + File.separator + fileDto.getFileCode();
-        File dirFile = new File(dirPath);
-        if (!dirFile.exists()) {
-            return;
-        }
-        File[] fileList = dirFile.listFiles();
+        String dirPath = getDirPath(fileDto.getFileCode());
+        File[] fileList = new File(dirPath).listFiles();
         if (fileList.length == 0) {
             return;
         }
-        if (fileList.length == 1 && fileDto.getFileName().equals(dirFile.listFiles()[0].getName())) {
+        if (fileList.length == 1 && fileDto.getFileName().equals(fileList[0].getName())) {
             fileDto.setBlockList(null);
         } else {
             List<Integer> nums = new ArrayList<>(fileList.length);
@@ -181,4 +174,5 @@ public class FileUtil {
             }
         }
     }
+
 }
